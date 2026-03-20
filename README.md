@@ -22,7 +22,38 @@ For first-time admin setup before SAML is configured, local bootstrap admin cred
 - URL: `/bootstrap-admin/login`
 - File: `.internal/bootstrap-admin-credentials.txt`
 
-The bootstrap admin login is available only for local requests in Development. Disable it in the admin portal after onboarding SAML.
+The bootstrap admin login is available only for local requests in Development (or when `BootstrapAdminEnabled=true` is set as an app setting in Azure). Disable it in the admin portal after onboarding SAML.
+
+### Why the credentials file is kept after bootstrap is disabled
+
+When you disable the bootstrap account via Admin → App Controls, the `.internal/bootstrap-admin-credentials.txt` file is deliberately **not deleted** for these reasons:
+
+1. **The account is already inert.** The login query filters `IsEnabled = true` — a disabled account cannot authenticate regardless of whether the file exists.
+2. **The file is not HTTP-accessible.** It lives in `ContentRootPath/.internal/`, which ASP.NET Core never serves statically. No route exposes it.
+3. **Kudu access requires Azure AD.** On Azure App Service, reading the file via the Kudu VFS API (`https://<app>.scm.azurewebsites.net/api/vfs/...`) requires Azure Subscription Contributor or higher. Anyone at that access level can already redeploy the app, modify the database, and read all secrets — the credentials file provides no additional attack surface.
+4. **It is an emergency recovery artifact.** If SSO breaks and you need to re-enable the bootstrap account, you will need this password. `BootstrapDataService` only generates a new password when no `bootstrap-admin` database record exists — re-enabling an existing (disabled) record does not regenerate or re-write the file.
+
+### Manually deleting the credentials file (optional)
+
+If your security policy requires removing all plaintext credential artifacts after use, you can delete the file manually after disabling the bootstrap account:
+
+**Via Kudu DebugConsole (Azure App Service):**
+1. Open `https://<your-app>.scm.azurewebsites.net/DebugConsole`
+2. Navigate to `site\wwwroot\.internal\`
+3. Click the delete icon next to `bootstrap-admin-credentials.txt`
+
+**Via Kudu VFS REST API:**
+```
+DELETE https://<your-app>.scm.azurewebsites.net/api/vfs/site/wwwroot/.internal/bootstrap-admin-credentials.txt
+```
+Authorization uses your Azure AD credentials (same as the portal).
+
+**Locally:**
+```
+Remove-Item ".internal/bootstrap-admin-credentials.txt"
+```
+
+> **Note:** If you delete the file and later need to re-enable bootstrap (e.g., emergency SSO recovery), you must reset the password directly in the SQLite database via Kudu or generate a new credential record.
 
 ## API endpoints
 
