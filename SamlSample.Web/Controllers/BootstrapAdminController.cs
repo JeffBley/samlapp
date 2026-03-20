@@ -88,15 +88,6 @@ public class BootstrapAdminController(
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        // Delete the plaintext credential hint file — it served its purpose during initial setup
-        // and should not persist once the bootstrap account is disabled.
-        var credentialsFilePath = Path.Combine(environment.ContentRootPath, ".internal", "bootstrap-admin-credentials.txt");
-        if (System.IO.File.Exists(credentialsFilePath))
-        {
-            System.IO.File.Delete(credentialsFilePath);
-        }
-
         TempData["Message"] = "Bootstrap local admin login disabled.";
         return RedirectToAction("Index", "AppControls", new { area = "Admin" });
     }
