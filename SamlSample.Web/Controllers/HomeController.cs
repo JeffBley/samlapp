@@ -15,6 +15,31 @@ public class HomeController(
     IWebHostEnvironment environment,
     IConfiguration configuration) : Controller
 {
+    // Nav "Home" button lands here — re-authenticates via the SAML Launcher system app
+    // so the user gets back the admin-role cookie regardless of which app they last logged in to.
+    [AllowAnonymous]
+    public async Task<IActionResult> GoHome(CancellationToken cancellationToken)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToAction(nameof(Welcome));
+
+        // Already have admin context — no re-auth needed
+        if (User.IsInRole("admin"))
+            return RedirectToAction(nameof(Index));
+
+        // Authenticated as a non-admin app user — re-auth via system app if its SSO is configured
+        var systemApp = await configurationService.GetAppBySlugAsync("saml-launcher", cancellationToken);
+        var samlConfigured = systemApp is not null
+            && !string.IsNullOrEmpty(systemApp.IdpEntityId)
+            && (!string.IsNullOrEmpty(systemApp.IdpSsoUrl) || !string.IsNullOrEmpty(systemApp.FederationMetadataUrl));
+
+        if (samlConfigured)
+            return Redirect($"/saml/saml-launcher/login?returnUrl={Uri.EscapeDataString("/")}");
+
+        // System app SSO not yet configured (e.g. bootstrap admin flow) — just go to Index
+        return RedirectToAction(nameof(Index));
+    }
+
     [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
