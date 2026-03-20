@@ -147,14 +147,9 @@ public class SamlController(ISamlConfigurationService configurationService, ILog
                 return RedirectToAction(nameof(LoginFailed));
             }
 
-            // System apps (admin portal) always grant admin access regardless of IdP role claims
-            if (app.IsSystem)
-            {
-                if (!finalClaims.Any(c => c.Type == ClaimTypes.Role && c.Value == "admin"))
-                    finalClaims.Add(new Claim(ClaimTypes.Role, "admin"));
-                if (!finalClaims.Any(c => c.Type == ClaimTypes.Role && c.Value == "user"))
-                    finalClaims.Add(new Claim(ClaimTypes.Role, "user"));
-            }
+            // Roles are sourced entirely from IdP claims — including for system apps (the admin portal).
+            // Do NOT inject admin here based on IsSystem: that would elevate a `user`-only principal
+            // to admin, bypassing the IdP role assignment entirely.
 
             // Store the app name and signing cert thumbprint in the session cookie
             finalClaims.Add(new Claim("urn:samlsample:app", app.AppName));
