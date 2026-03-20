@@ -17,7 +17,8 @@ public class BootstrapAdminController(
     AppDbContext dbContext,
     ISecretHashingService secretHashingService,
     IWebHostEnvironment environment,
-    ISamlConfigurationService configurationService) : Controller
+    ISamlConfigurationService configurationService,
+    IConfiguration configuration) : Controller
 {
     [AllowAnonymous]
     [HttpGet("login")]
@@ -109,7 +110,8 @@ public class BootstrapAdminController(
 
     private async Task<bool> IsBootstrapLoginAvailableAsync(CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment() || !IsLocalRequest())
+        var overrideEnabled = string.Equals(configuration["BootstrapAdminEnabled"], "true", StringComparison.OrdinalIgnoreCase);
+        if (!overrideEnabled && (!environment.IsDevelopment() || !IsLocalRequest()))
         {
             return false;
         }

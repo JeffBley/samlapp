@@ -12,7 +12,8 @@ namespace SamlSample.Web.Controllers;
 public class HomeController(
     ISamlConfigurationService configurationService,
     AppDbContext dbContext,
-    IWebHostEnvironment environment) : Controller
+    IWebHostEnvironment environment,
+    IConfiguration configuration) : Controller
 {
     [Authorize(Roles = "user,admin")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
@@ -27,8 +28,8 @@ public class HomeController(
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction(nameof(Index));
 
-        var bootstrapAvailable = environment.IsDevelopment()
-            && IsLocalRequest()
+        var overrideEnabled = string.Equals(configuration["BootstrapAdminEnabled"], "true", StringComparison.OrdinalIgnoreCase);
+        var bootstrapAvailable = (overrideEnabled || (environment.IsDevelopment() && IsLocalRequest()))
             && await dbContext.LocalAdminCredentials.AnyAsync(c => c.IsEnabled, cancellationToken);
 
         ViewData["BootstrapAvailable"] = bootstrapAvailable;

@@ -74,7 +74,13 @@ public class SsoController(ISamlConfigurationService configurationService) : Con
         {
             var app = await configurationService.GetAppAsync(id, cancellationToken);
             var certs = await configurationService.GetCertificatesAsync(id, cancellationToken);
-            return View(ToEditViewModel(app, certs));
+            var vm = ToEditViewModel(app, certs);
+            if (string.IsNullOrWhiteSpace(vm.AssertionConsumerServiceUrl))
+            {
+                var effectiveSlug = string.IsNullOrWhiteSpace(vm.UrlSlug) ? vm.Id.ToString() : vm.UrlSlug;
+                vm.AssertionConsumerServiceUrl = $"{Request.Scheme}://{Request.Host}/saml/{effectiveSlug}/acs";
+            }
+            return View(vm);
         }
         catch (KeyNotFoundException)
         {
