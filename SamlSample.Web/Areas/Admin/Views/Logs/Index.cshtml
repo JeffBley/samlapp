@@ -1,0 +1,59 @@
+@model IReadOnlyList<SamlSample.Web.Models.ConfigChangeLog>
+@{
+    ViewData["Title"] = "Audit Logs";
+    var currentSort = (ViewData["Sort"] as string) ?? "desc";
+    var nextSort = string.Equals(currentSort, "desc", StringComparison.OrdinalIgnoreCase) ? "asc" : "desc";
+}
+
+<h2>Audit Logs</h2>
+<p>Shows before/after values whenever SSO configuration or certificate settings change.</p>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <partial name="_AdminTray" />
+    </div>
+    <div class="col-md-9">
+
+<div class="mb-3">
+    <a asp-area="Admin" asp-controller="Logs" asp-action="Index" asp-route-sort="@nextSort" class="btn btn-outline-primary btn-sm">
+        Sort by date: @(string.Equals(currentSort, "desc", StringComparison.OrdinalIgnoreCase) ? "Newest first" : "Oldest first")
+    </a>
+</div>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Date (UTC)</th>
+            <th>Section</th>
+            <th>Field</th>
+            <th>Before</th>
+            <th>After</th>
+            <th>Changed By</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Count == 0)
+        {
+            <tr>
+                <td colspan="6">No logs yet.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.ChangedUtc.ToString("u")</td>
+                    <td>@item.Section</td>
+                    <td>@item.FieldName</td>
+                    <td>@item.BeforeValue</td>
+                    <td>@item.AfterValue</td>
+                    <td>@item.ChangedBy</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+    </div>
+</div>

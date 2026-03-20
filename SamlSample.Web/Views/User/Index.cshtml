@@ -1,0 +1,49 @@
+@model SamlSample.Web.Controllers.UserProfileViewModel
+@{
+    ViewData["Title"] = "User Profile";
+    var appName = User.FindFirst("urn:samlsample:app")?.Value;
+}
+
+@if (!string.IsNullOrEmpty(appName))
+{
+    <h1 class="mb-4">You've successfully signed in to <strong>@appName</strong>.</h1>
+}
+else
+{
+    <h1 class="mb-4">You've successfully signed in.</h1>
+}
+
+@if (!string.IsNullOrEmpty(Model.CertThumbprint))
+{
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">Entra ID Signing Certificate</h5>
+            <p class="card-text font-monospace">@Model.CertThumbprint</p>
+        </div>
+    </div>
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5 class="card-title">Display Name</h5>
+        <p class="card-text">@Model.DisplayName</p>
+    </div>
+</div>
+
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>Claim Type</th>
+            <th>Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var claim in Model.Claims)
+        {
+            <tr>
+                <td>@claim.Type</td>
+                <td>@claim.Value</td>
+            </tr>
+        }
+    </tbody>
+</table>

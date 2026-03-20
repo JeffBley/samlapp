@@ -1,0 +1,170 @@
+@model SamlSample.Web.Models.Admin.AdminSsoEditViewModel
+@{
+    ViewData["Title"] = "Edit: " + Model.AppName;
+    var effectiveSlug = string.IsNullOrWhiteSpace(Model.UrlSlug) ? Model.Id.ToString() : Model.UrlSlug;
+    var acsHint = $"{Context.Request.Scheme}://{Context.Request.Host}/saml/{effectiveSlug}/acs";
+    var loginUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/saml/{effectiveSlug}/login";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>@Model.AppName</h2>
+    <a asp-area="Admin" asp-controller="Sso" asp-action="Index" class="btn btn-outline-secondary">&larr; Back</a>
+</div>
+
+@if (TempData["Message"] is string message)
+{
+    <div class="alert alert-success">@message</div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <partial name="_AdminTray" />
+    </div>
+    <div class="col-md-9">
+
+        <form asp-area="Admin" asp-controller="Sso" asp-action="Edit" asp-route-id="@Model.Id" method="post" class="mb-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="AppName" class="form-label"></label>
+                    <input asp-for="AppName" class="form-control" />
+                    <span asp-validation-for="AppName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="SpEntityId" class="form-label"></label>
+                    <input asp-for="SpEntityId" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="AssertionConsumerServiceUrl" class="form-label"></label>
+                    <input asp-for="AssertionConsumerServiceUrl" class="form-control" placeholder="@acsHint" />
+                    <span asp-validation-for="AssertionConsumerServiceUrl" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="IdpEntityId" class="form-label"></label>
+                    <input asp-for="IdpEntityId" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="IdpSsoUrl" class="form-label"></label>
+                    <input asp-for="IdpSsoUrl" class="form-control" />
+                    <span asp-validation-for="IdpSsoUrl" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="FederationMetadataUrl" class="form-label"></label>
+                    <input asp-for="FederationMetadataUrl" class="form-control" />
+                    <span asp-validation-for="FederationMetadataUrl" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-area="Admin" asp-controller="Sso" asp-action="Index" class="btn btn-outline-secondary">Back</a>
+            </div>
+        </form>
+
+        <div class="alert alert-info mb-4">
+            <strong>Sign-in URL:</strong> <code>@loginUrl</code><br />
+            <strong>Assertion Consumer Service URL:</strong> <code>@acsHint</code><br />
+            <span class="text-muted small">Register the ACS URL as the redirect URI in your IdP (e.g. Entra ID app registration).</span>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Import Entra ID Federation Metadata</h5>
+                <form asp-area="Admin" asp-controller="Sso" asp-action="ImportMetadata" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="input-group">
+                        <input name="metadataUrl" value="@Model.FederationMetadataUrl" class="form-control"
+                               placeholder="https://login.microsoftonline.com/…/federationmetadata.xml?appid=…" />
+                        <button type="submit" class="btn btn-outline-primary">Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <h4>Signing Certificates</h4>
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Thumbprint</th>
+                    <th>Subject</th>
+                    <th>Issuer</th>
+                    <th>Valid From</th>
+                    <th>Valid To</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Certificates.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6">No certificates imported yet. Use Import above or add them manually.</td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var cert in Model.Certificates)
+                    {
+                        <tr>
+                            <td><code class="small">@cert.Thumbprint</code></td>
+                            <td>@cert.Subject</td>
+                            <td>@cert.Issuer</td>
+                            <td>@cert.NotBeforeUtc.UtcDateTime.ToString("u")</td>
+                            <td>@cert.NotAfterUtc.UtcDateTime.ToString("u")</td>
+                            <td class="text-end">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        &hellip;
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button type="button" class="dropdown-item text-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteCertModal"
+                                                data-cert-id="@cert.Id"
+                                                data-cert-thumbprint="@cert.Thumbprint">
+                                                Delete
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        <!-- Delete Certificate Confirmation Modal -->
+        <div class="modal fade" id="deleteCertModal" tabindex="-1" aria-labelledby="deleteCertModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteCertModalLabel">Delete Certificate</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete this certificate?</p>
+                        <p class="text-muted small mb-0" id="deleteCertThumbprint"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <form id="deleteCertForm" asp-area="Admin" asp-controller="Sso" asp-action="DeleteCert" asp-route-id="@Model.Id" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" id="deleteCertId" name="certificateId" value="" />
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

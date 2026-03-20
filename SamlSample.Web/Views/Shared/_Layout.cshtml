@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SAML Launcher</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/SamlSample.Web.styles.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <span class="navbar-brand">SAML Launcher</span>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        @if (User.IsInRole("admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="Admin" asp-controller="Sso" asp-action="Index">Admin Portal</a>
+                            </li>
+                        }
+                    </ul>
+                    <ul class="navbar-nav">
+                        @{
+                            var appNameClaim = User.FindFirst("urn:samlsample:app")?.Value;
+                            var isHomePage = ViewContext.RouteData.Values["controller"]?.ToString() == "Home";
+                            var showAppBadge = !isHomePage
+                                && !string.IsNullOrEmpty(appNameClaim)
+                                && !appNameClaim.StartsWith("SAML Launcher", StringComparison.OrdinalIgnoreCase);
+                        }
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            @if (showAppBadge)
+                            {
+                                <li class="nav-item">
+                                    <span class="nav-link text-dark">
+                                        <span class="badge bg-secondary saml-app-badge">@appNameClaim</span>
+                                    </span>
+                                </li>
+                            }
+                            <li class="nav-item">
+                                <form asp-area="" asp-controller="Saml" asp-action="Logout" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-link nav-link text-dark p-0 saml-signout-btn">Sign out</button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    @await Component.InvokeAsync("SecurityAlerts")
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - SAML Launcher
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/admin-sso.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

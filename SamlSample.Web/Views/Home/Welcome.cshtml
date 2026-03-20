@@ -1,0 +1,16 @@
+@{
+    ViewData["Title"] = "Welcome";
+    var bootstrapAvailable = ViewData["BootstrapAvailable"] is true;
+}
+
+<div class="text-center mt-5">
+    <h1 class="mb-3">Welcome to SAML Launcher</h1>
+    <p class="text-muted mb-4">Sign in to access your available applications.</p>
+    <div class="d-flex gap-3 justify-content-center">
+        <a href="/saml/saml-launcher/login?returnUrl=/" class="btn btn-primary btn-lg">Sign in with SSO</a>
+        @if (bootstrapAvailable)
+        {
+            <a href="/bootstrap-admin/login" class="btn btn-outline-secondary btn-lg">Sign in as Bootstrap Admin</a>
+        }
+    </div>
+</div>

@@ -1,0 +1,34 @@
+﻿@model IReadOnlyList<SamlSample.Web.Models.SamlSettings>
+@{
+    ViewData["Title"] = "SAML Launcher";
+}
+
+<div class="mt-4">
+    <h1>SAML Launcher</h1>
+    <p>Select an application below to sign in with SAML.</p>
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-info">
+            No SAML apps are configured yet.
+            <a asp-area="Admin" asp-controller="Sso" asp-action="Index">Configure apps in the admin portal.</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-2 mb-4">
+            @foreach (var app in Model)
+            {
+                var isConfigured = !string.IsNullOrEmpty(app.IdpEntityId)
+                    && (!string.IsNullOrEmpty(app.IdpSsoUrl) || !string.IsNullOrEmpty(app.FederationMetadataUrl));
+                var btnClass = isConfigured ? "btn-primary" : "btn-danger text-dark";
+                <div class="col-3 col-sm-2 col-md-1 saml-tile-col">
+                    <a class="btn @btnClass d-flex align-items-center justify-content-center text-center w-100 p-2 saml-tile-btn"
+                       href="/saml/@(string.IsNullOrWhiteSpace(app.UrlSlug) ? app.Id.ToString() : app.UrlSlug)/login?returnUrl=/user">
+                        @app.AppName
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</div>
